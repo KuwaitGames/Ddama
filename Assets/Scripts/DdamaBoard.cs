@@ -55,7 +55,6 @@ public class DdamaBoard : MonoBehaviour {
 
     private Block hoverBlock = Block.none;
     private Block dragSourceBlock = Block.none;
-    private Piece selectedPiece;
 
     // Use this for initialization
     void Start () {
@@ -84,12 +83,11 @@ public class DdamaBoard : MonoBehaviour {
         go.transform.SetParent(transform);
         Piece p = go.GetComponent<Piece>();
         board[block.X, block.Y] = p;
-        MovePiece(p, block);
+        MovePiece(block);
     }
 
     private void Update() {
         UpdateHoverBlock();
-
         UpdatePieceDrag();
 
         if (Input.GetMouseButtonDown(0))
@@ -97,7 +95,6 @@ public class DdamaBoard : MonoBehaviour {
 
         if (Input.GetMouseButtonUp(0))
             Drop();
-
     }
 
     // Cast a ray from the camera to the mouse pointer
@@ -122,41 +119,56 @@ public class DdamaBoard : MonoBehaviour {
 
     // See if there's a piece that is eligible for a drag.
     private void Drag() {
-        if (hoverBlock.IsNone) return;
+        if (hoverBlock.IsNone)
+            return;
 
-        Piece p = PieceForBlock(hoverBlock);
-
-        if (p == null) return;
+        if (PieceForBlock(hoverBlock) == null)
+            return;
 
         dragSourceBlock = hoverBlock;
-        selectedPiece = p;
     }
 
     // If we've been dragging a piece, try to make the
     // move.
     private void Drop() {
+        if (dragSourceBlock.IsNone)
+            return;
 
-        // if the move is invalid, cancel drag operation
-        CancelDrag();
+        if (!IsValidMove(dragSourceBlock, hoverBlock)) {
+            CancelDrag();
+            return;
+        }
 
+        // insert ourselves in the new spot on the board
+        board[hoverBlock.X, hoverBlock.Y] = PieceForBlock(dragSourceBlock);
 
+        // remove ourselves from the old spot on the board
+        board[dragSourceBlock.X, dragSourceBlock.Y] = null;
+
+        // move the piece to the correct block on the board
+        MovePiece(hoverBlock);
+
+        // switch turns
+        turn = (turn == Piece.Team.Yellow) ? Piece.Team.Black : Piece.Team.Yellow;
+
+        // drag operation has ended
+        dragSourceBlock = Block.none;
     }
 
     private void UpdatePieceDrag() {
-        if (selectedPiece == null) return;
+        if (dragSourceBlock.IsNone)
+            return;
 
         RaycastHit hit;
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
         if (Physics.Raycast(ray, out hit, 25.0f, LayerMask.GetMask("Board"))) {
-            selectedPiece.transform.position = hit.point + Vector3.up;
+            PieceForBlock(dragSourceBlock).transform.position = hit.point + Vector3.up;
         }
     }
 
     private void CancelDrag() {
-        if (selectedPiece)
-            MovePiece(selectedPiece, dragSourceBlock);
-        selectedPiece = null;
+        MovePiece(dragSourceBlock);
         dragSourceBlock = Block.none;
     }
 
@@ -168,8 +180,35 @@ public class DdamaBoard : MonoBehaviour {
         return b.X >= 0 && b.X < boardSize && b.Y >= 0 && b.Y < boardSize;
     }
 
-    private void MovePiece(Piece piece, Block block) {
-        piece.transform.position =
+    private bool IsValidMove(Block from, Block to) {
+        Piece p = PieceForBlock(from);
+
+        // Not a move
+        if (from == to)
+            return false;
+
+        // Can't move outside the board
+        if (!IsValidBlock(to))
+            return false;
+
+        // Can't move to an occupied spot
+        if (PieceForBlock(to) != null)
+            return false;
+
+        // Not your turn
+        if (p.team != turn)
+            return false;
+
+        // Can't move backwards if not a sheik
+        int direction = to.Y - from.Y * (p.team == Piece.Team.Yellow ? 1 : -1);
+        if (!p.isSheikh && direction < 0)
+            return false;
+
+        return true;
+    }
+
+    private void MovePiece(Block block) {
+        PieceForBlock(block).transform.position =
              (Vector3.right * block.X) +
              (Vector3.forward * block.Y) +
              boardOffset +
