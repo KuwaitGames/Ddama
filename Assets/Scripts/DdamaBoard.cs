@@ -181,11 +181,10 @@ public class DdamaBoard : MonoBehaviour {
     }
 
     private bool IsValidMove(Block from, Block to) {
-        Piece p = PieceForBlock(from);
+        Debug.Log(from);
+        Debug.Log(to);
 
-        // Not a move
-        if (from == to)
-            return false;
+        Piece p = PieceForBlock(from);
 
         // Can't move outside the board
         if (!IsValidBlock(to))
@@ -200,8 +199,13 @@ public class DdamaBoard : MonoBehaviour {
             return false;
 
         // Can't move backwards if not a sheik
-        int direction = to.Y - from.Y * (p.team == Piece.Team.Yellow ? 1 : -1);
+        int direction = (to.Y - from.Y) * (p.team == Piece.Team.Yellow ? 1 : -1);
         if (!p.isSheikh && direction < 0)
+            return false;
+
+        // Can't move by more than one block if not a sheik
+        int distance = Mathf.Abs(to.Y - from.Y) + Mathf.Abs(to.X - from.X);
+        if (!p.isSheikh && distance != 1)
             return false;
 
         return true;
