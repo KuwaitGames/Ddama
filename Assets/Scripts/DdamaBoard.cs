@@ -222,21 +222,16 @@ public class DdamaBoard : MonoBehaviour {
         if (p.team != turn)
             return false;
 
-        // Can't move backwards if not a sheik
-        int direction = (to.Y - from.Y) * (p.team == Piece.Team.Yellow ? 1 : -1);
-        if (!p.isSheikh && direction < 0)
-            return false;
-
-        // Can't move by more than one block if not a sheik
-        int distance = Mathf.Abs(to.Y - from.Y) + Mathf.Abs(to.X - from.X);
-        if (!p.isSheikh && distance != 1)
-            return false;
-
-        // Even if it's a Sheikh, can't jump over other pieces
-        if (!IsStraightClearPathBetween(from, to))
+        if (!IsValidPath(from, to, p.isSheikh))
             return false;
 
         return true;
+    }
+
+    private bool IsValidPath(Block from, Block to, bool isSheikh) {
+        return isSheikh
+                ? IsStraightClearPathBetween(from, to)
+                : (!IsBackwardMove(from, to) && AreAdjacentBlocks(from, to));
     }
 
     private bool IsValidLandingBlock(Block target) {
@@ -273,29 +268,26 @@ public class DdamaBoard : MonoBehaviour {
         if (attacker.team != turn)
             return false;
 
-        // Can't kill backwards if not a sheikh
-        int direction = (to.Y - from.Y) * (attacker.team == Piece.Team.Yellow ? 1 : -1);
-        if (!attacker.isSheikh && direction < 0)
-            return false;
-
-        // Can't kill a distant victim if not a sheik
-        int distance = Mathf.Abs(to.Y - from.Y) + Mathf.Abs(to.X - from.X);
-        if (!attacker.isSheikh && distance != 2)
-            return false;
-
         Block victimBlock = KillVictimBlock(from, to);
         if (!IsValidBlock(victimBlock))
             return false;
 
-        if (!IsStraightClearPathBetween(from, victimBlock))
+        if (!IsValidPath(from, victimBlock, attacker.isSheikh))
             return false;
 
         Piece victim = PieceForBlock(victimBlock);
-
         if (victim == null)
             return false;
 
         return attacker.team != victim.team;
+    }
+
+    private bool IsBackwardMove(Block from, Block to) {
+        return (to.Y - from.Y) * (turn == Piece.Team.Yellow ? 1 : -1) < 0;
+    }
+
+    private bool AreAdjacentBlocks(Block a, Block b) {
+        return (Mathf.Abs(a.X - b.X) + Mathf.Abs(a.Y - b.Y)) == 1;
     }
 
     private bool IsStraightClearPathBetween(Block from, Block to) {
