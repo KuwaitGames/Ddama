@@ -232,6 +232,10 @@ public class DdamaBoard : MonoBehaviour {
         if (!p.isSheikh && distance != 1)
             return false;
 
+        // Even if it's a Sheikh, can't jump over other pieces
+        if (!IsStraightClearPathBetween(from, to))
+            return false;
+
         return true;
     }
 
@@ -278,13 +282,43 @@ public class DdamaBoard : MonoBehaviour {
         int distance = Mathf.Abs(to.Y - from.Y) + Mathf.Abs(to.X - from.X);
         if (!attacker.isSheikh && distance != 2)
             return false;
-            
-        Piece victim = PieceForBlock(KillVictimBlock(from, to));
+
+        Block victimBlock = KillVictimBlock(from, to);
+        if (!IsValidBlock(victimBlock))
+            return false;
+
+        if (!IsStraightClearPathBetween(from, victimBlock))
+            return false;
+
+        Piece victim = PieceForBlock(victimBlock);
 
         if (victim == null)
             return false;
 
         return attacker.team != victim.team;
+    }
+
+    private bool IsStraightClearPathBetween(Block from, Block to) {
+        if (from.X == to.X) {
+            int min = Mathf.Min(from.Y, to.Y) + 1;
+            int max = Mathf.Max(from.Y, to.Y) - 1;
+
+            for (int y = min; y <= max; y++)
+                if (board[from.X, y] != null)
+                    return false;
+        } else if (from.Y == to.Y) {
+            int min = Mathf.Min(from.X, to.X) + 1;
+            int max = Mathf.Max(from.X, to.X) - 1;
+
+            for (int x = min; x <= max; x++)
+                if (board[x, from.Y] != null)
+                    return false;
+        } else {
+            // Diagonal path always fails
+            return false;
+        }
+
+        return true;
     }
 
     private void MovePiece(Block block) {
