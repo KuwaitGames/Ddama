@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 
 public class DdamaBoard : MonoBehaviour {
@@ -134,25 +132,46 @@ public class DdamaBoard : MonoBehaviour {
         if (dragSourceBlock.IsNone)
             return;
 
-        if (!IsValidMove(dragSourceBlock, hoverBlock)) {
-            CancelDrag();
-            return;
+        if (IsValidKillMove(dragSourceBlock, hoverBlock)) {
+            PerformKillMove(dragSourceBlock, hoverBlock);
+            SwitchTurns();
+        } else if (IsValidMove(dragSourceBlock, hoverBlock)) {
+            PerformMove(dragSourceBlock, hoverBlock);
+            SwitchTurns();
+        } else {
+            MovePiece(dragSourceBlock);
         }
 
+        dragSourceBlock = Block.none;
+    }
+
+    private void SwitchTurns() {
+        turn = (turn == Piece.Team.Yellow) ? Piece.Team.Black : Piece.Team.Yellow;
+    }
+
+    private void PerformMove(Block from, Block to) {
         // insert ourselves in the new spot on the board
-        board[hoverBlock.X, hoverBlock.Y] = PieceForBlock(dragSourceBlock);
+        board[to.X, to.Y] = PieceForBlock(from);
 
         // remove ourselves from the old spot on the board
-        board[dragSourceBlock.X, dragSourceBlock.Y] = null;
+        board[from.X, from.Y] = null;
 
         // move the piece to the correct block on the board
-        MovePiece(hoverBlock);
+        MovePiece(to);
+    }
 
-        // switch turns
-        turn = (turn == Piece.Team.Yellow) ? Piece.Team.Black : Piece.Team.Yellow;
+    private void PerformKillMove(Block from, Block to) {
+        // move the attacker
+        PerformMove(from, to);
 
-        // drag operation has ended
-        dragSourceBlock = Block.none;
+        // remove the victim
+        Block victimBlock = KillVictimBlock(from, to);
+        RemovePiece(PieceForBlock(victimBlock));
+        board[victimBlock.X, victimBlock.Y] = null;
+    }
+
+    private void RemovePiece(Piece p) {
+        p.gameObject.SetActive(false);
     }
 
     private void UpdatePieceDrag() {
@@ -167,11 +186,6 @@ public class DdamaBoard : MonoBehaviour {
         }
     }
 
-    private void CancelDrag() {
-        MovePiece(dragSourceBlock);
-        dragSourceBlock = Block.none;
-    }
-
     private Piece PieceForBlock(Block b) {
         return board[b.X, b.Y];
     }
@@ -181,17 +195,10 @@ public class DdamaBoard : MonoBehaviour {
     }
 
     private bool IsValidMove(Block from, Block to) {
-        Debug.Log(from);
-        Debug.Log(to);
-
         Piece p = PieceForBlock(from);
 
-        // Can't move outside the board
-        if (!IsValidBlock(to))
-            return false;
-
-        // Can't move to an occupied spot
-        if (PieceForBlock(to) != null)
+        // Block must be inhabitable
+        if (!IsValidLandingBlock(to))
             return false;
 
         // Not your turn
@@ -209,6 +216,39 @@ public class DdamaBoard : MonoBehaviour {
             return false;
 
         return true;
+    }
+
+    private bool IsValidLandingBlock(Block target) {
+        return IsValidBlock(target) && (PieceForBlock(target) == null);
+    }
+
+    private Block KillVictimBlock(Block from, Block to) {
+        int x, y;
+
+        if (from.X == to.X) {
+            // front/back kill
+            x = from.X;
+            y = to.Y + (from.Y < to.Y ? -1 : 1);
+        } else {
+            // sideways kill
+            y = from.Y;
+            x = to.X + (from.X < to.X ? -1 : 1);
+        }
+
+        return new Block(x, y);
+    }
+
+    private bool IsValidKillMove(Block from, Block to) {
+        if (!IsValidLandingBlock(to))
+            return false;
+
+        Piece attacker = PieceForBlock(from);
+        Piece victim = PieceForBlock(KillVictimBlock(from, to));
+
+        return
+            attacker != null &&
+            victim != null &&
+            attacker.team != victim.team;
     }
 
     private void MovePiece(Block block) {
