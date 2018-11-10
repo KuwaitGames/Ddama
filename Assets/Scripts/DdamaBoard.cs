@@ -134,9 +134,11 @@ public class DdamaBoard : MonoBehaviour {
 
         if (IsValidKillMove(dragSourceBlock, hoverBlock)) {
             PerformKillMove(dragSourceBlock, hoverBlock);
+            CheckSheikhPromotion(hoverBlock);
             SwitchTurns();
         } else if (IsValidMove(dragSourceBlock, hoverBlock)) {
             PerformMove(dragSourceBlock, hoverBlock);
+            CheckSheikhPromotion(hoverBlock);
             SwitchTurns();
         } else {
             MovePiece(dragSourceBlock);
@@ -147,6 +149,21 @@ public class DdamaBoard : MonoBehaviour {
 
     private void SwitchTurns() {
         turn = (turn == Piece.Team.Yellow) ? Piece.Team.Black : Piece.Team.Yellow;
+    }
+
+    private void CheckSheikhPromotion(Block block) {
+        // if not at the last row return
+        if (block.Y != ((turn == Piece.Team.Yellow) ? boardSize - 1 : 0))
+            return;
+
+        Piece p = PieceForBlock(block);
+
+        // it is already a sheikh
+        if (p.isSheikh)
+            return;
+
+        p.isSheikh = true;
+        p.transform.Rotate(Vector3.right * 90);
     }
 
     private void PerformMove(Block from, Block to) {
