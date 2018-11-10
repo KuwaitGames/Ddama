@@ -229,10 +229,12 @@ public class DdamaBoard : MonoBehaviour {
             // front/back kill
             x = from.X;
             y = to.Y + (from.Y < to.Y ? -1 : 1);
-        } else {
+        } else if (from.Y == to.Y) {
             // sideways kill
             y = from.Y;
             x = to.X + (from.X < to.X ? -1 : 1);
+        } else {
+            return Block.none;
         }
 
         return new Block(x, y);
@@ -243,12 +245,29 @@ public class DdamaBoard : MonoBehaviour {
             return false;
 
         Piece attacker = PieceForBlock(from);
+        if (attacker == null)
+            return false;
+
+        // Not your turn
+        if (attacker.team != turn)
+            return false;
+
+        // Can't kill backwards if not a sheikh
+        int direction = (to.Y - from.Y) * (attacker.team == Piece.Team.Yellow ? 1 : -1);
+        if (!attacker.isSheikh && direction < 0)
+            return false;
+
+        // Can't kill a distant victim if not a sheik
+        int distance = Mathf.Abs(to.Y - from.Y) + Mathf.Abs(to.X - from.X);
+        if (!attacker.isSheikh && distance != 2)
+            return false;
+            
         Piece victim = PieceForBlock(KillVictimBlock(from, to));
 
-        return
-            attacker != null &&
-            victim != null &&
-            attacker.team != victim.team;
+        if (victim == null)
+            return false;
+
+        return attacker.team != victim.team;
     }
 
     private void MovePiece(Block block) {
