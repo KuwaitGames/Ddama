@@ -55,6 +55,8 @@ public class DdamaBoard : MonoBehaviour {
     private Block hoverBlock = Block.none;
     private Block dragSourceBlock = Block.none;
 
+    private List<Block[]> killMovesList = new List<Block[]>();
+
     // Use this for initialization
     void Start () {
         GenerateBoard();
@@ -124,6 +126,9 @@ public class DdamaBoard : MonoBehaviour {
         if (PieceForBlock(hoverBlock) == null)
             return;
 
+        if (!IsMovable(hoverBlock))
+            return;
+
         dragSourceBlock = hoverBlock;
     }
 
@@ -133,10 +138,12 @@ public class DdamaBoard : MonoBehaviour {
         if (dragSourceBlock.IsNone)
             return;
 
-        if (IsValidMove(dragSourceBlock, hoverBlock)) {
+        if (killMovesList.Count > 0 && IsValidKillMove(dragSourceBlock, hoverBlock)) {
+            PerformKillMove(dragSourceBlock, hoverBlock);
+            CompleteTurn();
+        } else if (IsValidMove(dragSourceBlock, hoverBlock)) {
             PerformMove(dragSourceBlock, hoverBlock);
-            CheckSheikhPromotion(hoverBlock);
-            NextTurn();
+            CompleteTurn();
         } else {
             MovePiece(dragSourceBlock);
         }
@@ -144,15 +151,11 @@ public class DdamaBoard : MonoBehaviour {
         dragSourceBlock = Block.none;
     }
 
-    private void NextTurn() {
-        turn = (turn == Piece.Team.Yellow) ? Piece.Team.Black : Piece.Team.Yellow;
+    private void CompleteTurn() {
+        CheckSheikhPromotion(hoverBlock);
 
-        Block[] possibleKillMove = FindKillMove();
-        if (possibleKillMove != null) {
-            PerformKillMove(possibleKillMove[0], possibleKillMove[1]);
-            CheckSheikhPromotion(possibleKillMove[1]);
-            NextTurn();
-        }
+        turn = (turn == Piece.Team.Yellow) ? Piece.Team.Black : Piece.Team.Yellow;
+        UpdateKillMovesList();
     }
 
     private void CheckSheikhPromotion(Block block) {
@@ -317,22 +320,46 @@ public class DdamaBoard : MonoBehaviour {
         return true;
     }
 
-    // TODO: update this to find most "optimal" kill move
-    private Block[] FindKillMove() {
+    private bool IsMovable(Block from) {
+        Piece p = PieceForBlock(from);
+
+        // must not be blank
+        if (p == null)
+            return false;
+
+        // must be our turn
+        if (p.team != turn)
+            return false;
+
+        // if there are no current kills, we're good to go
+        if (killMovesList.Count == 0)
+            return true;
+
+        // since there are possible kills, this has to be one of them
+        if (killMovesList.Count > 0)
+            foreach (Block[] killMove in killMovesList)
+                if (killMove[0] == from)
+                    return true;
+
+        // this isn't one of the kill moves, so deny it
+        return false;
+    }
+
+    private void UpdateKillMovesList() {
+        killMovesList.Clear();
         for (int x = 0; x < boardSize; x++) {
             for (int y = 0; y < boardSize; y++) {
                 Block block = new Block(x, y);
-                if (PieceForBlock(block) == null)
+                Piece p = PieceForBlock(block);
+
+                // skip empty blocks and other players blocks
+                if (p == null || p.team != turn)
                     continue;
 
-                List<Block> killMoves = FindKillMovesFromBlock(block);
-
-                if (killMoves.Count > 0) {
-                    return new [] { block, killMoves[0] };
-                }
+                foreach (Block target in FindKillMovesFromBlock(block))
+                    killMovesList.Add(new [] { block, target });
             }
         }
-        return null;
     }
 
     private List<Block> FindKillMovesFromBlock(Block from) {
