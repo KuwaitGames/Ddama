@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 
 public class DdamaBoard : MonoBehaviour {
@@ -132,14 +133,10 @@ public class DdamaBoard : MonoBehaviour {
         if (dragSourceBlock.IsNone)
             return;
 
-        if (IsValidKillMove(dragSourceBlock, hoverBlock)) {
-            PerformKillMove(dragSourceBlock, hoverBlock);
-            CheckSheikhPromotion(hoverBlock);
-            SwitchTurns();
-        } else if (IsValidMove(dragSourceBlock, hoverBlock)) {
+        if (IsValidMove(dragSourceBlock, hoverBlock)) {
             PerformMove(dragSourceBlock, hoverBlock);
             CheckSheikhPromotion(hoverBlock);
-            SwitchTurns();
+            NextTurn();
         } else {
             MovePiece(dragSourceBlock);
         }
@@ -147,8 +144,15 @@ public class DdamaBoard : MonoBehaviour {
         dragSourceBlock = Block.none;
     }
 
-    private void SwitchTurns() {
+    private void NextTurn() {
         turn = (turn == Piece.Team.Yellow) ? Piece.Team.Black : Piece.Team.Yellow;
+
+        Block[] possibleKillMove = FindKillMove();
+        if (possibleKillMove != null) {
+            PerformKillMove(possibleKillMove[0], possibleKillMove[1]);
+            CheckSheikhPromotion(possibleKillMove[1]);
+            NextTurn();
+        }
     }
 
     private void CheckSheikhPromotion(Block block) {
@@ -311,6 +315,82 @@ public class DdamaBoard : MonoBehaviour {
         }
 
         return true;
+    }
+
+    // TODO: update this to find most "optimal" kill move
+    private Block[] FindKillMove() {
+        for (int x = 0; x < boardSize; x++) {
+            for (int y = 0; y < boardSize; y++) {
+                Block block = new Block(x, y);
+                if (PieceForBlock(block) == null)
+                    continue;
+
+                List<Block> killMoves = FindKillMovesFromBlock(block);
+
+                if (killMoves.Count > 0) {
+                    return new [] { block, killMoves[0] };
+                }
+            }
+        }
+        return null;
+    }
+
+    private List<Block> FindKillMovesFromBlock(Block from) {
+        List<Block> killMoves = new List<Block>();
+
+        Piece p = PieceForBlock(from);
+        if (p == null)
+            return killMoves;
+
+        if (p.team != turn)
+            return killMoves;
+
+        // right
+        for (int x = from.X + 1; x < boardSize; x++) {
+            if (board[x, from.Y] != null) {
+                Block target = new Block(x + 1, from.Y);
+                if (IsValidKillMove(from, target))
+                    killMoves.Add(target);
+                else
+                    break;
+            }
+        }
+
+        // left
+        for (int x = from.X - 1; x >= 0; x--) {
+            if (board[x, from.Y] != null) {
+                Block target = new Block(x - 1, from.Y);
+                if (IsValidKillMove(from, target))
+                    killMoves.Add(target );
+                else
+                    break;
+            }
+        }
+
+        // up
+        for (int y = from.Y + 1; y < boardSize; y++) {
+            if (board[from.X, y] != null) {
+                Block target = new Block(from.X, y + 1);
+                if (IsValidKillMove(from, target))
+                    killMoves.Add(target);
+                else
+                    break;
+            }
+        }
+
+        // down
+        for (int y = from.Y - 1; y >= 0; y--) {
+            if (board[from.X, y] != null)
+            {
+                Block target = new Block(from.X, y - 1);
+                if (IsValidKillMove(from, target))
+                    killMoves.Add(target);
+                else
+                    break;
+            }
+        }
+
+        return killMoves;
     }
 
     private void MovePiece(Block block) {
