@@ -138,10 +138,10 @@ public class DdamaBoard : MonoBehaviour {
         if (dragSourceBlock.IsNone)
             return;
 
-        if (killMovesList.Count > 0 && IsValidKillMove(dragSourceBlock, hoverBlock)) {
+        if (IsValidKillMove(dragSourceBlock, hoverBlock)) {
             PerformKillMove(dragSourceBlock, hoverBlock);
             CompleteTurn();
-        } else if (IsValidMove(dragSourceBlock, hoverBlock)) {
+        } else if (killMovesList.Count == 0 && IsValidMove(dragSourceBlock, hoverBlock)) {
             PerformMove(dragSourceBlock, hoverBlock);
             CompleteTurn();
         } else {
