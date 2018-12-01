@@ -81,6 +81,9 @@ public class Lander : MonoBehaviour {
 	}
 
 	void EndRound() {
-		ddamaBoard.EndMiniGame(status == Status.survived);
+		Destroy(go);
+		bool survived = status == Status.survived;
+		status = Status.settingup;
+		ddamaBoard.EndMiniGame(survived);
 	}
 }
