@@ -170,6 +170,7 @@ public class DdamaBoard : MonoBehaviour {
             return;
 
         p.isSheikh = true;
+        p.transform.SetParent(null);
         p.transform.Rotate(Vector3.right * 90);
     }
 
