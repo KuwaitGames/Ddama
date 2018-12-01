@@ -489,6 +489,7 @@ public class DdamaBoard : MonoBehaviour {
         if (!survived) {
             RemovePiece(PieceForBlock(miniGamePlayer));
             board[miniGamePlayer.X, miniGamePlayer.Y] = null;
+            UpdateKillMovesList();
         }
         
         miniGamePlayer = Block.none;
