@@ -6,6 +6,8 @@ public class DdamaBoard : MonoBehaviour {
     public GameObject yellowPiecePrefab;
     public GameObject blackPiecePrefab;
 
+    public Lander lander;
+
     private struct Block {
         private readonly int x, y;
 
@@ -56,6 +58,8 @@ public class DdamaBoard : MonoBehaviour {
     private Block dragSourceBlock = Block.none;
 
     private List<Block[]> killMovesList = new List<Block[]>();
+
+    private Block miniGamePlayer = Block.none;
 
     // Use this for initialization
     void Start () {
@@ -232,6 +236,9 @@ public class DdamaBoard : MonoBehaviour {
         Block victimBlock = KillVictimBlock(from, to);
         RemovePiece(PieceForBlock(victimBlock));
         board[victimBlock.X, victimBlock.Y] = null;
+
+        // attacker plays minigame
+        StartMiniGame(to);
     }
 
     private void RemovePiece(Piece p) {
@@ -466,5 +473,24 @@ public class DdamaBoard : MonoBehaviour {
              (Vector3.forward * block.Y) +
              boardOffset +
              pieceOffset;
+    }
+
+    private void StartMiniGame(Block player) {
+        miniGamePlayer = player;
+        Camera.main.transform.position = new Vector3(10.0f, 6.0f, 4.6f);
+        Camera.main.transform.rotation = new Quaternion(0.2f, 0.0f, 0.0f, 1.0f);
+        lander.PlayRound(PieceForBlock(player).team);
+    }
+
+    public void EndMiniGame(bool survived) {
+        Camera.main.transform.position = new Vector3(0.0f, 8.0f, 0.0f);
+        Camera.main.transform.rotation = new Quaternion(0.7f, 0.0f, 0.0f, 0.7f);
+
+        if (!survived) {
+            RemovePiece(PieceForBlock(miniGamePlayer));
+            board[miniGamePlayer.X, miniGamePlayer.Y] = null;
+        }
+        
+        miniGamePlayer = Block.none;
     }
 }

@@ -21,8 +21,8 @@ GameObject:
   - component: {fileID: 4747852049420786}
   - component: {fileID: 33576102271084238}
   - component: {fileID: 23086558655633164}
-  - component: {fileID: 136009356428550910}
   - component: {fileID: 114509703555114782}
+  - component: {fileID: 65052905172647848}
   m_Layer: 0
   m_Name: Black
   m_TagString: Untagged
@@ -85,6 +85,18 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1581869376995754}
   m_Mesh: {fileID: 4300000, guid: 769e9271776ac49a2a44ae619c6fae65, type: 3}
+--- !u!65 &65052905172647848
+BoxCollider:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1581869376995754}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.6, y: 0.31999996, z: 0.59999996}
+  m_Center: {x: 0, y: -0.13656487, z: -0.000000029802322}
 --- !u!114 &114509703555114782
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -98,16 +110,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   team: 1
   isSheikh: 0
---- !u!136 &136009356428550910
-CapsuleCollider:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1581869376995754}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  m_Radius: 0.5
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
