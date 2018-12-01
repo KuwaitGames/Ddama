@@ -141,6 +141,7 @@ public class DdamaBoard : MonoBehaviour {
         if (IsValidKillMove(dragSourceBlock, hoverBlock)) {
             PerformKillMove(dragSourceBlock, hoverBlock);
             CompleteTurn();
+            CheckGameOver();
         } else if (killMovesList.Count == 0 && IsValidMove(dragSourceBlock, hoverBlock)) {
             PerformMove(dragSourceBlock, hoverBlock);
             CompleteTurn();
@@ -156,6 +157,44 @@ public class DdamaBoard : MonoBehaviour {
 
         turn = (turn == Piece.Team.Yellow) ? Piece.Team.Black : Piece.Team.Yellow;
         UpdateKillMovesList();
+    }
+
+    private void CheckGameOver() {
+        // if current player has no pieces left, then game is over
+        for (int x = 0; x < boardSize; x++) {
+            for (int y = 0; y < boardSize; y++) {
+                Piece p = PieceForBlock(new Block(x, y));
+                if (p != null && p.team == turn)
+                    return; // found a piece, game is not over
+            }
+        }
+
+        // player who has the turn lost :(
+        CelebrateWinner();
+        ResetGame();
+    }
+
+    private void CelebrateWinner() {
+        // TODO
+    }
+
+    private void ResetGame() {
+        // remove all existing pieces
+        for (int x = 0; x < boardSize; x++) {
+            for (int y = 0; y < boardSize; y++) {
+                Piece p = PieceForBlock(new Block(x, y));
+                if (p != null) {
+                    RemovePiece(p);
+                    board[x, y] = null;
+                }
+            }
+        }
+        
+        // generate the board again
+        GenerateBoard();
+
+        // yellow always goes first
+        turn = Piece.Team.Yellow;
     }
 
     private void CheckSheikhPromotion(Block block) {
